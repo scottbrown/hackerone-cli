@@ -1,0 +1,21 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - go build -ldflags "-X github.com/scottbrown/hackerone-cli.Version={{.VERSION}}" -o bin/h1 ./cmd/h1
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+
+  test:
+    cmds:
+      - go test ./... -cover
+
+  lint:
+    cmds:
+      - golangci-lint run
+
+  clean:
+    cmds:
+      - rm -rf bin/
