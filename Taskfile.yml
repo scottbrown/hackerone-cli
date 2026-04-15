@@ -1,12 +1,35 @@
 version: '3'
 
+vars:
+  bin_name: h1
+  project_name: hackerone-cli
+  app_repo: github.com/scottbrown/{{ .project_name }}
+  pkg_name: "{{ .app_repo }}/cmd/{{ .bin_name }}"
+
+  pwd:
+    sh: pwd
+
+  build_dir: "{{ .pwd }}/.build"
+  dist_dir: "{{ .pwd }}/.dist"
+
+  git_version:
+    sh: git tag --points-at HEAD | head -1 | grep . || git rev-parse --abbrev-ref HEAD
+  git_commit:
+    sh: git rev-parse --short HEAD
+  ldflags: "-X {{ .app_repo }}.VERSION={{ .git_version }} -X {{ .app_repo }}.COMMIT={{ .git_commit }}"
+
 tasks:
   build:
     cmds:
-      - go build -ldflags "-X github.com/scottbrown/hackerone-cli.Version={{.VERSION}}" -o .build/h1 ./cmd/h1
+      - go build -ldflags "{{ .ldflags }}" -o {{ .build_dir }}/{{ .bin_name }} {{ .pkg_name }}
     vars:
       VERSION:
         sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+
+  fmt:
+    desc: "Formats the code"
+    cmds:
+      - go fmt ./...
 
   test:
     cmds:
@@ -15,3 +38,90 @@ tasks:
   clean:
     cmds:
       - rm -rf .build
+
+  release:
+    desc: "Creates release artifacts"
+    deps:
+      - task: build-deps
+        silent: true
+      - task: release-all
+    requires:
+      vars:
+        - VERSION
+
+  build-deps:
+    cmds:
+      - mkdir -p {{ .dist_dir }}
+    internal: true
+
+  build-all:
+    desc: "Builds all artifacts"
+    deps: [ build-linux, build-windows, build-darwin ]
+
+  build-linux:
+    desc: "Builds a linux artifact"
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: GOOS=$GOOS GOARCH={{ .ITEM }} go build -ldflags "{{ .ldflags }}" -o {{ .build_dir }}/linux-{{ .ITEM }}/{{ .bin_name }} {{ .app_repo }}/cmd
+    env:
+      GOOS: linux
+
+  build-windows:
+    desc: "Builds a Windows artifact"
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: GOOS=$GOOS GOARCH={{ .ITEM }} go build -ldflags "{{ .ldflags }}" -o {{ .build_dir }}/windows-{{ .ITEM }}/{{ .bin_name }}.exe {{ .app_repo }}/cmd
+    env:
+      GOOS: windows
+
+  build-darwin:
+    desc: "Builds a MacOS artifact"
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: GOOS=darwin GOARCH={{ .ITEM }} go build -ldflags "{{ .ldflags }}" -o {{ .build_dir }}/darwin-{{ .ITEM }}/{{ .bin_name }} {{ .app_repo }}/cmd
+    env:
+      GOOS: darwin
+
+  release-all:
+    desc: "Creates all releasable artifacts"
+    deps: [ release-linux, release-windows, release-darwin ]
+
+  release-linux:
+    desc: "Creates a linux releasable artifact"
+    deps: [ build-linux ]
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: tar cfz {{ .dist_dir }}/{{ .bin_name }}_{{ .VERSION }}_linux_{{ .ITEM }}.tar.gz -C {{ .build_dir }}/linux-{{ .ITEM }} .
+    requires:
+      vars:
+        - VERSION
+
+  release-windows:
+    desc: "Creates a Windows releasable artifact"
+    deps: [ build-windows ]
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: tar cfz {{ .dist_dir }}/{{ .bin_name }}_{{ .VERSION }}_windows_{{ .ITEM }}.tar.gz -C {{ .build_dir }}/windows-{{ .ITEM }} .
+    requires:
+      vars:
+        - VERSION
+
+  release-darwin:
+    desc: "Creates a MacOS releasable artifact"
+    deps: [ build-darwin ]
+    cmds:
+      - for: [ amd64, arm64 ]
+        cmd: tar cfz {{ .dist_dir }}/{{ .bin_name }}_{{ .VERSION }}_darwin_{{ .ITEM }}.tar.gz -C {{ .build_dir }}/darwin-{{ .ITEM }} .
+    requires:
+      vars:
+        - VERSION
+
+  sbom:
+    desc: "Generates an SBOM"
+    cmds:
+      - cyclonedx-gomod mod -licenses -json -output {{ .dist_dir }}/bom.json
+
+  bench:
+    desc: "Benchmark the code"
+    cmds:
+      - go test -bench=. -benchmem -benchtime=5s -run=^$ ./...
