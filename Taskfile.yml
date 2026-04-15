@@ -22,9 +22,6 @@ tasks:
   build:
     cmds:
       - go build -ldflags "{{ .ldflags }}" -o {{ .build_dir }}/{{ .bin_name }} {{ .pkg_name }}
-    vars:
-      VERSION:
-        sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
 
   fmt:
     desc: "Formats the code"
