@@ -16,8 +16,8 @@ func TestListAssets(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets" {
-			t.Errorf("expected path /assets, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets" {
+			t.Errorf("expected path /organizations/org1/assets, got %s", r.URL.Path)
 		}
 		if r.URL.Query().Get("page[number]") != "1" {
 			t.Errorf("expected page[number]=1, got %s", r.URL.Query().Get("page[number]"))
@@ -29,7 +29,7 @@ func TestListAssets(t *testing.T) {
 		})
 	})
 
-	assets, err := c.ListAssets(context.Background(), PageParams{Number: 1, Size: 10})
+	assets, err := c.ListAssets(context.Background(), "org1", PageParams{Number: 1, Size: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,15 +49,15 @@ func TestGetAsset(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1" {
-			t.Errorf("expected path /assets/a1, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1" {
+			t.Errorf("expected path /organizations/org1/assets/a1, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": Asset{ID: "a1", Type: "asset", Attributes: AssetAttributes{AssetType: "URL", Identifier: "example.com"}},
 		})
 	})
 
-	asset, err := c.GetAsset(context.Background(), "a1")
+	asset, err := c.GetAsset(context.Background(), "org1", "a1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -71,8 +71,8 @@ func TestCreateAsset(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets" {
-			t.Errorf("expected path /assets, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets" {
+			t.Errorf("expected path /organizations/org1/assets, got %s", r.URL.Path)
 		}
 		var envelope struct {
 			Data struct {
@@ -90,7 +90,7 @@ func TestCreateAsset(t *testing.T) {
 		})
 	})
 
-	asset, err := c.CreateAsset(context.Background(), CreateAssetInput{AssetType: "URL", Identifier: "test.com"})
+	asset, err := c.CreateAsset(context.Background(), "org1", CreateAssetInput{AssetType: "URL", Identifier: "test.com"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -104,15 +104,15 @@ func TestUpdateAsset(t *testing.T) {
 		if r.Method != http.MethodPut {
 			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1" {
-			t.Errorf("expected path /assets/a1, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1" {
+			t.Errorf("expected path /organizations/org1/assets/a1, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": Asset{ID: "a1", Type: "asset", Attributes: AssetAttributes{Description: "updated"}},
 		})
 	})
 
-	asset, err := c.UpdateAsset(context.Background(), "a1", UpdateAssetInput{Description: "updated"})
+	asset, err := c.UpdateAsset(context.Background(), "org1", "a1", UpdateAssetInput{Description: "updated"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,8 +126,8 @@ func TestArchiveAssets(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets" {
-			t.Errorf("expected path /assets, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets" {
+			t.Errorf("expected path /organizations/org1/assets, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
 		var envelope struct {
@@ -142,7 +142,7 @@ func TestArchiveAssets(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := c.ArchiveAssets(context.Background(), []string{"a1", "a2"})
+	err := c.ArchiveAssets(context.Background(), "org1", []string{"a1", "a2"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -156,8 +156,8 @@ func TestImportAssets(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/import" {
-			t.Errorf("expected path /assets/import, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/import" {
+			t.Errorf("expected path /organizations/org1/assets/import, got %s", r.URL.Path)
 		}
 		ct := r.Header.Get("Content-Type")
 		if !strings.HasPrefix(ct, "multipart/form-data") {
@@ -166,7 +166,7 @@ func TestImportAssets(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"import_id": "imp1"})
 	})
 
-	result, err := c.ImportAssets(context.Background(), tmpFile)
+	result, err := c.ImportAssets(context.Background(), "org1", tmpFile)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -180,13 +180,13 @@ func TestGetImportStatus(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/import/imp1" {
-			t.Errorf("expected path /assets/import/imp1, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/import/imp1" {
+			t.Errorf("expected path /organizations/org1/assets/import/imp1, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "complete"})
 	})
 
-	result, err := c.GetImportStatus(context.Background(), "imp1")
+	result, err := c.GetImportStatus(context.Background(), "org1", "imp1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -203,8 +203,8 @@ func TestUploadAssetScreenshot(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/attachments" {
-			t.Errorf("expected path /assets/a1/attachments, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/attachments" {
+			t.Errorf("expected path /organizations/org1/assets/a1/attachments, got %s", r.URL.Path)
 		}
 		ct := r.Header.Get("Content-Type")
 		if !strings.HasPrefix(ct, "multipart/form-data") {
@@ -213,7 +213,7 @@ func TestUploadAssetScreenshot(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	err := c.UploadAssetScreenshot(context.Background(), "a1", tmpFile)
+	err := c.UploadAssetScreenshot(context.Background(), "org1", "a1", tmpFile)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,8 +224,8 @@ func TestListAssetPorts(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/ports" {
-			t.Errorf("expected path /assets/a1/ports, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/ports" {
+			t.Errorf("expected path /organizations/org1/assets/a1/ports, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": []Port{
@@ -234,7 +234,7 @@ func TestListAssetPorts(t *testing.T) {
 		})
 	})
 
-	ports, err := c.ListAssetPorts(context.Background(), "a1", PageParams{Number: 1, Size: 10})
+	ports, err := c.ListAssetPorts(context.Background(), "org1", "a1", PageParams{Number: 1, Size: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -251,8 +251,8 @@ func TestCreateAssetPort(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/ports" {
-			t.Errorf("expected path /assets/a1/ports, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/ports" {
+			t.Errorf("expected path /organizations/org1/assets/a1/ports, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -260,7 +260,7 @@ func TestCreateAssetPort(t *testing.T) {
 		})
 	})
 
-	port, err := c.CreateAssetPort(context.Background(), "a1", CreatePortInput{Port: 80, Protocol: "tcp"})
+	port, err := c.CreateAssetPort(context.Background(), "org1", "a1", CreatePortInput{Port: 80, Protocol: "tcp"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -274,13 +274,13 @@ func TestDeleteAssetPort(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/ports/p1" {
-			t.Errorf("expected path /assets/a1/ports/p1, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/ports/p1" {
+			t.Errorf("expected path /organizations/org1/assets/a1/ports/p1, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := c.DeleteAssetPort(context.Background(), "a1", "p1")
+	err := c.DeleteAssetPort(context.Background(), "org1", "a1", "p1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -291,13 +291,13 @@ func TestGetReachabilityStatus(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/reachability_status" {
-			t.Errorf("expected path /assets/a1/reachability_status, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/reachability_status" {
+			t.Errorf("expected path /organizations/org1/assets/a1/reachability_status, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"reachable": true})
 	})
 
-	result, err := c.GetReachabilityStatus(context.Background(), "a1")
+	result, err := c.GetReachabilityStatus(context.Background(), "org1", "a1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -311,13 +311,13 @@ func TestCheckReachability(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/check_reachability" {
-			t.Errorf("expected path /assets/a1/check_reachability, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/check_reachability" {
+			t.Errorf("expected path /organizations/org1/assets/a1/check_reachability, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "checking"})
 	})
 
-	result, err := c.CheckReachability(context.Background(), "a1")
+	result, err := c.CheckReachability(context.Background(), "org1", "a1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -331,15 +331,15 @@ func TestGetScannerConfig(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/scanner_configuration" {
-			t.Errorf("expected path /assets/a1/scanner_configuration, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/scanner_configuration" {
+			t.Errorf("expected path /organizations/org1/assets/a1/scanner_configuration, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": ScannerConfiguration{Enabled: true},
 		})
 	})
 
-	cfg, err := c.GetScannerConfig(context.Background(), "a1")
+	cfg, err := c.GetScannerConfig(context.Background(), "org1", "a1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -353,15 +353,15 @@ func TestUpdateScannerConfig(t *testing.T) {
 		if r.Method != http.MethodPut {
 			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/scanner_configuration" {
-			t.Errorf("expected path /assets/a1/scanner_configuration, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/scanner_configuration" {
+			t.Errorf("expected path /organizations/org1/assets/a1/scanner_configuration, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": ScannerConfiguration{Enabled: false},
 		})
 	})
 
-	cfg, err := c.UpdateScannerConfig(context.Background(), "a1", ScannerConfiguration{Enabled: false})
+	cfg, err := c.UpdateScannerConfig(context.Background(), "org1", "a1", ScannerConfiguration{Enabled: false})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -375,13 +375,13 @@ func TestAddAssetScope(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/scopes" {
-			t.Errorf("expected path /assets/scopes, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/scopes" {
+			t.Errorf("expected path /organizations/org1/assets/scopes, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	err := c.AddAssetScope(context.Background(), AssetScope{AssetID: "a1", ProgramID: "p1", Eligible: true})
+	err := c.AddAssetScope(context.Background(), "org1", AssetScope{AssetID: "a1", ProgramID: "p1", Eligible: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -392,13 +392,13 @@ func TestUpdateAssetScope(t *testing.T) {
 		if r.Method != http.MethodPut {
 			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/scopes" {
-			t.Errorf("expected path /assets/a1/scopes, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/scopes" {
+			t.Errorf("expected path /organizations/org1/assets/a1/scopes, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusOK)
 	})
 
-	err := c.UpdateAssetScope(context.Background(), "a1", AssetScope{Eligible: false})
+	err := c.UpdateAssetScope(context.Background(), "org1", "a1", AssetScope{Eligible: false})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -409,13 +409,13 @@ func TestArchiveAssetScopes(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/assets/a1/scopes" {
-			t.Errorf("expected path /assets/a1/scopes, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/assets/a1/scopes" {
+			t.Errorf("expected path /organizations/org1/assets/a1/scopes, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := c.ArchiveAssetScopes(context.Background(), "a1")
+	err := c.ArchiveAssetScopes(context.Background(), "org1", "a1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -426,8 +426,8 @@ func TestListAssetTags(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/asset_tags" {
-			t.Errorf("expected path /asset_tags, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/asset_tags" {
+			t.Errorf("expected path /organizations/org1/asset_tags, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": []AssetTag{
@@ -436,7 +436,7 @@ func TestListAssetTags(t *testing.T) {
 		})
 	})
 
-	tags, err := c.ListAssetTags(context.Background(), PageParams{Number: 1, Size: 10})
+	tags, err := c.ListAssetTags(context.Background(), "org1", PageParams{Number: 1, Size: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -453,8 +453,8 @@ func TestCreateAssetTag(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/asset_tags" {
-			t.Errorf("expected path /asset_tags, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/asset_tags" {
+			t.Errorf("expected path /organizations/org1/asset_tags, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -462,7 +462,7 @@ func TestCreateAssetTag(t *testing.T) {
 		})
 	})
 
-	tag, err := c.CreateAssetTag(context.Background(), AssetTag{Attributes: AssetTagAttributes{Name: "new-tag"}})
+	tag, err := c.CreateAssetTag(context.Background(), "org1", AssetTag{Attributes: AssetTagAttributes{Name: "new-tag"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -476,8 +476,8 @@ func TestListAssetTagCategories(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/asset_tag_categories" {
-			t.Errorf("expected path /asset_tag_categories, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/asset_tag_categories" {
+			t.Errorf("expected path /organizations/org1/asset_tag_categories, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": []AssetTagCategory{
@@ -486,7 +486,7 @@ func TestListAssetTagCategories(t *testing.T) {
 		})
 	})
 
-	cats, err := c.ListAssetTagCategories(context.Background(), PageParams{Number: 1, Size: 10})
+	cats, err := c.ListAssetTagCategories(context.Background(), "org1", PageParams{Number: 1, Size: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -500,8 +500,8 @@ func TestCreateAssetTagCategory(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/asset_tag_categories" {
-			t.Errorf("expected path /asset_tag_categories, got %s", r.URL.Path)
+		if r.URL.Path != "/organizations/org1/asset_tag_categories" {
+			t.Errorf("expected path /organizations/org1/asset_tag_categories, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -509,7 +509,7 @@ func TestCreateAssetTagCategory(t *testing.T) {
 		})
 	})
 
-	cat, err := c.CreateAssetTagCategory(context.Background(), AssetTagCategory{Attributes: AssetTagCategoryAttributes{Name: "new-cat"}})
+	cat, err := c.CreateAssetTagCategory(context.Background(), "org1", AssetTagCategory{Attributes: AssetTagCategoryAttributes{Name: "new-cat"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -524,7 +524,7 @@ func TestListAssetsAPIError(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]string{"message": "unauthorized"})
 	})
 
-	_, err := c.ListAssets(context.Background(), PageParams{})
+	_, err := c.ListAssets(context.Background(), "org1", PageParams{})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -539,7 +539,7 @@ func TestListAssetsAPIError(t *testing.T) {
 
 func TestImportAssetsFileNotFound(t *testing.T) {
 	c := NewClient("id", "tok")
-	_, err := c.ImportAssets(context.Background(), "/nonexistent/file.csv")
+	_, err := c.ImportAssets(context.Background(), "org1", "/nonexistent/file.csv")
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}
@@ -547,7 +547,7 @@ func TestImportAssetsFileNotFound(t *testing.T) {
 
 func TestUploadAssetScreenshotFileNotFound(t *testing.T) {
 	c := NewClient("id", "tok")
-	err := c.UploadAssetScreenshot(context.Background(), "a1", "/nonexistent/file.png")
+	err := c.UploadAssetScreenshot(context.Background(), "org1", "a1", "/nonexistent/file.png")
 	if err == nil {
 		t.Fatal("expected error for missing file")
 	}

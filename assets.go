@@ -90,9 +90,13 @@ type AssetTagCategoryAttributes struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) ListAssets(ctx context.Context, params PageParams) ([]Asset, error) {
+func orgAssetsPath(orgID string) string {
+	return fmt.Sprintf("/organizations/%s/assets", orgID)
+}
+
+func (c *Client) ListAssets(ctx context.Context, orgID string, params PageParams) ([]Asset, error) {
 	qp := params.Apply(nil)
-	resp, err := c.Get(ctx, "/assets", qp)
+	resp, err := c.Get(ctx, orgAssetsPath(orgID), qp)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +109,8 @@ func (c *Client) ListAssets(ctx context.Context, params PageParams) ([]Asset, er
 	return result.Data, nil
 }
 
-func (c *Client) GetAsset(ctx context.Context, id string) (*Asset, error) {
-	resp, err := c.Get(ctx, "/assets/"+id, nil)
+func (c *Client) GetAsset(ctx context.Context, orgID, id string) (*Asset, error) {
+	resp, err := c.Get(ctx, orgAssetsPath(orgID)+"/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,12 +123,12 @@ func (c *Client) GetAsset(ctx context.Context, id string) (*Asset, error) {
 	return &result.Data, nil
 }
 
-func (c *Client) CreateAsset(ctx context.Context, input CreateAssetInput) (*Asset, error) {
+func (c *Client) CreateAsset(ctx context.Context, orgID string, input CreateAssetInput) (*Asset, error) {
 	body, err := wrapJSONAPI("asset", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/assets", bytes.NewReader(body))
+	resp, err := c.Post(ctx, orgAssetsPath(orgID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -137,12 +141,12 @@ func (c *Client) CreateAsset(ctx context.Context, input CreateAssetInput) (*Asse
 	return &result.Data, nil
 }
 
-func (c *Client) UpdateAsset(ctx context.Context, id string, input UpdateAssetInput) (*Asset, error) {
+func (c *Client) UpdateAsset(ctx context.Context, orgID, id string, input UpdateAssetInput) (*Asset, error) {
 	body, err := wrapJSONAPI("asset", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Put(ctx, "/assets/"+id, bytes.NewReader(body))
+	resp, err := c.Put(ctx, orgAssetsPath(orgID)+"/"+id, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +159,12 @@ func (c *Client) UpdateAsset(ctx context.Context, id string, input UpdateAssetIn
 	return &result.Data, nil
 }
 
-func (c *Client) ArchiveAssets(ctx context.Context, ids []string) error {
+func (c *Client) ArchiveAssets(ctx context.Context, orgID string, ids []string) error {
 	body, err := wrapJSONAPI("asset", map[string][]string{"ids": ids})
 	if err != nil {
 		return err
 	}
-	req, err := c.newRequest(ctx, http.MethodDelete, "/assets", bytes.NewReader(body))
+	req, err := c.newRequest(ctx, http.MethodDelete, orgAssetsPath(orgID), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -172,12 +176,12 @@ func (c *Client) ArchiveAssets(ctx context.Context, ids []string) error {
 	return nil
 }
 
-func (c *Client) ImportAssets(ctx context.Context, filePath string) (map[string]interface{}, error) {
+func (c *Client) ImportAssets(ctx context.Context, orgID, filePath string) (map[string]interface{}, error) {
 	body, contentType, err := createMultipartFile("file", filePath)
 	if err != nil {
 		return nil, err
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, "/assets/import", body)
+	req, err := c.newRequest(ctx, http.MethodPost, orgAssetsPath(orgID)+"/import", body)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +197,8 @@ func (c *Client) ImportAssets(ctx context.Context, filePath string) (map[string]
 	return result, nil
 }
 
-func (c *Client) GetImportStatus(ctx context.Context, id string) (map[string]interface{}, error) {
-	resp, err := c.Get(ctx, "/assets/import/"+id, nil)
+func (c *Client) GetImportStatus(ctx context.Context, orgID, id string) (map[string]interface{}, error) {
+	resp, err := c.Get(ctx, orgAssetsPath(orgID)+"/import/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,12 +209,12 @@ func (c *Client) GetImportStatus(ctx context.Context, id string) (map[string]int
 	return result, nil
 }
 
-func (c *Client) UploadAssetScreenshot(ctx context.Context, assetID, filePath string) error {
+func (c *Client) UploadAssetScreenshot(ctx context.Context, orgID, assetID, filePath string) error {
 	body, contentType, err := createMultipartFile("file", filePath)
 	if err != nil {
 		return err
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, fmt.Sprintf("/assets/%s/attachments", assetID), body)
+	req, err := c.newRequest(ctx, http.MethodPost, fmt.Sprintf("%s/%s/attachments", orgAssetsPath(orgID), assetID), body)
 	if err != nil {
 		return err
 	}
@@ -223,9 +227,9 @@ func (c *Client) UploadAssetScreenshot(ctx context.Context, assetID, filePath st
 	return nil
 }
 
-func (c *Client) ListAssetPorts(ctx context.Context, assetID string, params PageParams) ([]Port, error) {
+func (c *Client) ListAssetPorts(ctx context.Context, orgID, assetID string, params PageParams) ([]Port, error) {
 	qp := params.Apply(nil)
-	resp, err := c.Get(ctx, fmt.Sprintf("/assets/%s/ports", assetID), qp)
+	resp, err := c.Get(ctx, fmt.Sprintf("%s/%s/ports", orgAssetsPath(orgID), assetID), qp)
 	if err != nil {
 		return nil, err
 	}
@@ -238,12 +242,12 @@ func (c *Client) ListAssetPorts(ctx context.Context, assetID string, params Page
 	return result.Data, nil
 }
 
-func (c *Client) CreateAssetPort(ctx context.Context, assetID string, input CreatePortInput) (*Port, error) {
+func (c *Client) CreateAssetPort(ctx context.Context, orgID, assetID string, input CreatePortInput) (*Port, error) {
 	body, err := wrapJSONAPI("port", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, fmt.Sprintf("/assets/%s/ports", assetID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("%s/%s/ports", orgAssetsPath(orgID), assetID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -256,8 +260,8 @@ func (c *Client) CreateAssetPort(ctx context.Context, assetID string, input Crea
 	return &result.Data, nil
 }
 
-func (c *Client) DeleteAssetPort(ctx context.Context, assetID, portID string) error {
-	resp, err := c.Delete(ctx, fmt.Sprintf("/assets/%s/ports/%s", assetID, portID))
+func (c *Client) DeleteAssetPort(ctx context.Context, orgID, assetID, portID string) error {
+	resp, err := c.Delete(ctx, fmt.Sprintf("%s/%s/ports/%s", orgAssetsPath(orgID), assetID, portID))
 	if err != nil {
 		return err
 	}
@@ -265,8 +269,8 @@ func (c *Client) DeleteAssetPort(ctx context.Context, assetID, portID string) er
 	return nil
 }
 
-func (c *Client) GetReachabilityStatus(ctx context.Context, assetID string) (map[string]interface{}, error) {
-	resp, err := c.Get(ctx, fmt.Sprintf("/assets/%s/reachability_status", assetID), nil)
+func (c *Client) GetReachabilityStatus(ctx context.Context, orgID, assetID string) (map[string]interface{}, error) {
+	resp, err := c.Get(ctx, fmt.Sprintf("%s/%s/reachability_status", orgAssetsPath(orgID), assetID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -277,8 +281,8 @@ func (c *Client) GetReachabilityStatus(ctx context.Context, assetID string) (map
 	return result, nil
 }
 
-func (c *Client) CheckReachability(ctx context.Context, assetID string) (map[string]interface{}, error) {
-	resp, err := c.Post(ctx, fmt.Sprintf("/assets/%s/check_reachability", assetID), nil)
+func (c *Client) CheckReachability(ctx context.Context, orgID, assetID string) (map[string]interface{}, error) {
+	resp, err := c.Post(ctx, fmt.Sprintf("%s/%s/check_reachability", orgAssetsPath(orgID), assetID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -289,8 +293,8 @@ func (c *Client) CheckReachability(ctx context.Context, assetID string) (map[str
 	return result, nil
 }
 
-func (c *Client) GetScannerConfig(ctx context.Context, assetID string) (*ScannerConfiguration, error) {
-	resp, err := c.Get(ctx, fmt.Sprintf("/assets/%s/scanner_configuration", assetID), nil)
+func (c *Client) GetScannerConfig(ctx context.Context, orgID, assetID string) (*ScannerConfiguration, error) {
+	resp, err := c.Get(ctx, fmt.Sprintf("%s/%s/scanner_configuration", orgAssetsPath(orgID), assetID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -303,12 +307,12 @@ func (c *Client) GetScannerConfig(ctx context.Context, assetID string) (*Scanner
 	return &result.Data, nil
 }
 
-func (c *Client) UpdateScannerConfig(ctx context.Context, assetID string, input ScannerConfiguration) (*ScannerConfiguration, error) {
+func (c *Client) UpdateScannerConfig(ctx context.Context, orgID, assetID string, input ScannerConfiguration) (*ScannerConfiguration, error) {
 	body, err := wrapJSONAPI("scanner-configuration", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Put(ctx, fmt.Sprintf("/assets/%s/scanner_configuration", assetID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("%s/%s/scanner_configuration", orgAssetsPath(orgID), assetID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -321,12 +325,12 @@ func (c *Client) UpdateScannerConfig(ctx context.Context, assetID string, input 
 	return &result.Data, nil
 }
 
-func (c *Client) AddAssetScope(ctx context.Context, input AssetScope) error {
+func (c *Client) AddAssetScope(ctx context.Context, orgID string, input AssetScope) error {
 	body, err := wrapJSONAPI("asset-scope", input)
 	if err != nil {
 		return err
 	}
-	resp, err := c.Post(ctx, "/assets/scopes", bytes.NewReader(body))
+	resp, err := c.Post(ctx, orgAssetsPath(orgID)+"/scopes", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -334,12 +338,12 @@ func (c *Client) AddAssetScope(ctx context.Context, input AssetScope) error {
 	return nil
 }
 
-func (c *Client) UpdateAssetScope(ctx context.Context, assetID string, input AssetScope) error {
+func (c *Client) UpdateAssetScope(ctx context.Context, orgID, assetID string, input AssetScope) error {
 	body, err := wrapJSONAPI("asset-scope", input)
 	if err != nil {
 		return err
 	}
-	resp, err := c.Put(ctx, fmt.Sprintf("/assets/%s/scopes", assetID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("%s/%s/scopes", orgAssetsPath(orgID), assetID), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -347,8 +351,8 @@ func (c *Client) UpdateAssetScope(ctx context.Context, assetID string, input Ass
 	return nil
 }
 
-func (c *Client) ArchiveAssetScopes(ctx context.Context, assetID string) error {
-	resp, err := c.Delete(ctx, fmt.Sprintf("/assets/%s/scopes", assetID))
+func (c *Client) ArchiveAssetScopes(ctx context.Context, orgID, assetID string) error {
+	resp, err := c.Delete(ctx, fmt.Sprintf("%s/%s/scopes", orgAssetsPath(orgID), assetID))
 	if err != nil {
 		return err
 	}
@@ -356,9 +360,9 @@ func (c *Client) ArchiveAssetScopes(ctx context.Context, assetID string) error {
 	return nil
 }
 
-func (c *Client) ListAssetTags(ctx context.Context, params PageParams) ([]AssetTag, error) {
+func (c *Client) ListAssetTags(ctx context.Context, orgID string, params PageParams) ([]AssetTag, error) {
 	qp := params.Apply(nil)
-	resp, err := c.Get(ctx, "/asset_tags", qp)
+	resp, err := c.Get(ctx, fmt.Sprintf("/organizations/%s/asset_tags", orgID), qp)
 	if err != nil {
 		return nil, err
 	}
@@ -371,12 +375,12 @@ func (c *Client) ListAssetTags(ctx context.Context, params PageParams) ([]AssetT
 	return result.Data, nil
 }
 
-func (c *Client) CreateAssetTag(ctx context.Context, input AssetTag) (*AssetTag, error) {
+func (c *Client) CreateAssetTag(ctx context.Context, orgID string, input AssetTag) (*AssetTag, error) {
 	body, err := wrapJSONAPI("asset-tag", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/asset_tags", bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/organizations/%s/asset_tags", orgID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -389,9 +393,9 @@ func (c *Client) CreateAssetTag(ctx context.Context, input AssetTag) (*AssetTag,
 	return &result.Data, nil
 }
 
-func (c *Client) ListAssetTagCategories(ctx context.Context, params PageParams) ([]AssetTagCategory, error) {
+func (c *Client) ListAssetTagCategories(ctx context.Context, orgID string, params PageParams) ([]AssetTagCategory, error) {
 	qp := params.Apply(nil)
-	resp, err := c.Get(ctx, "/asset_tag_categories", qp)
+	resp, err := c.Get(ctx, fmt.Sprintf("/organizations/%s/asset_tag_categories", orgID), qp)
 	if err != nil {
 		return nil, err
 	}
@@ -404,12 +408,12 @@ func (c *Client) ListAssetTagCategories(ctx context.Context, params PageParams) 
 	return result.Data, nil
 }
 
-func (c *Client) CreateAssetTagCategory(ctx context.Context, input AssetTagCategory) (*AssetTagCategory, error) {
+func (c *Client) CreateAssetTagCategory(ctx context.Context, orgID string, input AssetTagCategory) (*AssetTagCategory, error) {
 	body, err := wrapJSONAPI("asset-tag-category", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, "/asset_tag_categories", bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/organizations/%s/asset_tag_categories", orgID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 
 	hackeronecli "github.com/scottbrown/hackerone-cli"
@@ -8,29 +9,39 @@ import (
 )
 
 func NewAssetsCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+	var orgID string
+
 	assetsCmd := &cobra.Command{
 		Use:   "assets",
 		Short: "Manage assets",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if orgID == "" {
+				return fmt.Errorf("--org is required for asset commands")
+			}
+			return nil
+		},
 	}
 
-	assetsCmd.AddCommand(newAssetsListCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsGetCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsCreateCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsUpdateCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsArchiveCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsImportCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsImportStatusCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsScreenshotCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsPortsCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsReachabilityCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsScannerCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsScopesCmd(clientFactory))
-	assetsCmd.AddCommand(newAssetsTagsCmd(clientFactory))
+	assetsCmd.PersistentFlags().StringVar(&orgID, "org", "", "Organization ID (required)")
+
+	assetsCmd.AddCommand(newAssetsListCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsGetCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsCreateCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsUpdateCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsArchiveCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsImportCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsImportStatusCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsScreenshotCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsPortsCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsReachabilityCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsScannerCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsScopesCmd(clientFactory, &orgID))
+	assetsCmd.AddCommand(newAssetsTagsCmd(clientFactory, &orgID))
 
 	return assetsCmd
 }
 
-func newAssetsListCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsListCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var page, pageSize int
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -41,11 +52,11 @@ func newAssetsListCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra
 			if err != nil {
 				return err
 			}
-			assets, err := client.ListAssets(cmd.Context(), hackeronecli.PageParams{Number: page, Size: pageSize})
+			assets, err := client.ListAssets(cmd.Context(), *orgID, hackeronecli.PageParams{Number: page, Size: pageSize})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,assets)
+			return writeOutput(cmd, assets)
 		},
 	}
 	cmd.Flags().IntVar(&page, "page", 0, "Page number")
@@ -53,7 +64,7 @@ func newAssetsListCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra
 	return cmd
 }
 
-func newAssetsGetCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsGetCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <id>",
 		Short: "Get an asset by ID",
@@ -63,16 +74,16 @@ func newAssetsGetCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.
 			if err != nil {
 				return err
 			}
-			asset, err := client.GetAsset(cmd.Context(), args[0])
+			asset, err := client.GetAsset(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,asset)
+			return writeOutput(cmd, asset)
 		},
 	}
 }
 
-func newAssetsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsCreateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var input hackeronecli.CreateAssetInput
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -83,11 +94,11 @@ func newAssetsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) *cob
 			if err != nil {
 				return err
 			}
-			asset, err := client.CreateAsset(cmd.Context(), input)
+			asset, err := client.CreateAsset(cmd.Context(), *orgID, input)
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,asset)
+			return writeOutput(cmd, asset)
 		},
 	}
 	cmd.Flags().StringVar(&input.AssetType, "type", "", "Asset type")
@@ -98,7 +109,7 @@ func newAssetsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) *cob
 	return cmd
 }
 
-func newAssetsUpdateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsUpdateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var input hackeronecli.UpdateAssetInput
 	cmd := &cobra.Command{
 		Use:   "update <id>",
@@ -109,11 +120,11 @@ func newAssetsUpdateCmd(clientFactory func() (*hackeronecli.Client, error)) *cob
 			if err != nil {
 				return err
 			}
-			asset, err := client.UpdateAsset(cmd.Context(), args[0], input)
+			asset, err := client.UpdateAsset(cmd.Context(), *orgID, args[0], input)
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,asset)
+			return writeOutput(cmd, asset)
 		},
 	}
 	cmd.Flags().StringVar(&input.AssetType, "type", "", "Asset type")
@@ -124,7 +135,7 @@ func newAssetsUpdateCmd(clientFactory func() (*hackeronecli.Client, error)) *cob
 	return cmd
 }
 
-func newAssetsArchiveCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsArchiveCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var ids string
 	cmd := &cobra.Command{
 		Use:   "archive",
@@ -136,7 +147,7 @@ func newAssetsArchiveCmd(clientFactory func() (*hackeronecli.Client, error)) *co
 				return err
 			}
 			idList := strings.Split(ids, ",")
-			if err := client.ArchiveAssets(cmd.Context(), idList); err != nil {
+			if err := client.ArchiveAssets(cmd.Context(), *orgID, idList); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Assets archived successfully")
@@ -146,7 +157,7 @@ func newAssetsArchiveCmd(clientFactory func() (*hackeronecli.Client, error)) *co
 	return cmd
 }
 
-func newAssetsImportCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsImportCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "import <file>",
 		Short: "Import assets from a CSV file",
@@ -156,16 +167,16 @@ func newAssetsImportCmd(clientFactory func() (*hackeronecli.Client, error)) *cob
 			if err != nil {
 				return err
 			}
-			result, err := client.ImportAssets(cmd.Context(), args[0])
+			result, err := client.ImportAssets(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,result)
+			return writeOutput(cmd, result)
 		},
 	}
 }
 
-func newAssetsImportStatusCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsImportStatusCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "import-status <id>",
 		Short: "Get the status of an asset import",
@@ -175,16 +186,16 @@ func newAssetsImportStatusCmd(clientFactory func() (*hackeronecli.Client, error)
 			if err != nil {
 				return err
 			}
-			result, err := client.GetImportStatus(cmd.Context(), args[0])
+			result, err := client.GetImportStatus(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,result)
+			return writeOutput(cmd, result)
 		},
 	}
 }
 
-func newAssetsScreenshotCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScreenshotCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "screenshot <id> <file>",
 		Short: "Upload a screenshot for an asset",
@@ -194,7 +205,7 @@ func newAssetsScreenshotCmd(clientFactory func() (*hackeronecli.Client, error)) 
 			if err != nil {
 				return err
 			}
-			if err := client.UploadAssetScreenshot(cmd.Context(), args[0], args[1]); err != nil {
+			if err := client.UploadAssetScreenshot(cmd.Context(), *orgID, args[0], args[1]); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Screenshot uploaded successfully")
@@ -202,20 +213,20 @@ func newAssetsScreenshotCmd(clientFactory func() (*hackeronecli.Client, error)) 
 	}
 }
 
-func newAssetsPortsCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsPortsCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	portsCmd := &cobra.Command{
 		Use:   "ports",
 		Short: "Manage asset ports",
 	}
 
-	portsCmd.AddCommand(newAssetsPortsListCmd(clientFactory))
-	portsCmd.AddCommand(newAssetsPortsCreateCmd(clientFactory))
-	portsCmd.AddCommand(newAssetsPortsDeleteCmd(clientFactory))
+	portsCmd.AddCommand(newAssetsPortsListCmd(clientFactory, orgID))
+	portsCmd.AddCommand(newAssetsPortsCreateCmd(clientFactory, orgID))
+	portsCmd.AddCommand(newAssetsPortsDeleteCmd(clientFactory, orgID))
 
 	return portsCmd
 }
 
-func newAssetsPortsListCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsPortsListCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var page, pageSize int
 	cmd := &cobra.Command{
 		Use:   "list <asset-id>",
@@ -226,11 +237,11 @@ func newAssetsPortsListCmd(clientFactory func() (*hackeronecli.Client, error)) *
 			if err != nil {
 				return err
 			}
-			ports, err := client.ListAssetPorts(cmd.Context(), args[0], hackeronecli.PageParams{Number: page, Size: pageSize})
+			ports, err := client.ListAssetPorts(cmd.Context(), *orgID, args[0], hackeronecli.PageParams{Number: page, Size: pageSize})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,ports)
+			return writeOutput(cmd, ports)
 		},
 	}
 	cmd.Flags().IntVar(&page, "page", 0, "Page number")
@@ -238,7 +249,7 @@ func newAssetsPortsListCmd(clientFactory func() (*hackeronecli.Client, error)) *
 	return cmd
 }
 
-func newAssetsPortsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsPortsCreateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var input hackeronecli.CreatePortInput
 	cmd := &cobra.Command{
 		Use:   "create <asset-id>",
@@ -249,11 +260,11 @@ func newAssetsPortsCreateCmd(clientFactory func() (*hackeronecli.Client, error))
 			if err != nil {
 				return err
 			}
-			port, err := client.CreateAssetPort(cmd.Context(), args[0], input)
+			port, err := client.CreateAssetPort(cmd.Context(), *orgID, args[0], input)
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,port)
+			return writeOutput(cmd, port)
 		},
 	}
 	cmd.Flags().IntVar(&input.Port, "port", 0, "Port number")
@@ -262,7 +273,7 @@ func newAssetsPortsCreateCmd(clientFactory func() (*hackeronecli.Client, error))
 	return cmd
 }
 
-func newAssetsPortsDeleteCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsPortsDeleteCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <asset-id> <port-id>",
 		Short: "Delete a port from an asset",
@@ -272,7 +283,7 @@ func newAssetsPortsDeleteCmd(clientFactory func() (*hackeronecli.Client, error))
 			if err != nil {
 				return err
 			}
-			if err := client.DeleteAssetPort(cmd.Context(), args[0], args[1]); err != nil {
+			if err := client.DeleteAssetPort(cmd.Context(), *orgID, args[0], args[1]); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Port deleted successfully")
@@ -280,19 +291,19 @@ func newAssetsPortsDeleteCmd(clientFactory func() (*hackeronecli.Client, error))
 	}
 }
 
-func newAssetsReachabilityCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsReachabilityCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	reachCmd := &cobra.Command{
 		Use:   "reachability",
 		Short: "Asset reachability operations",
 	}
 
-	reachCmd.AddCommand(newAssetsReachabilityStatusCmd(clientFactory))
-	reachCmd.AddCommand(newAssetsReachabilityCheckCmd(clientFactory))
+	reachCmd.AddCommand(newAssetsReachabilityStatusCmd(clientFactory, orgID))
+	reachCmd.AddCommand(newAssetsReachabilityCheckCmd(clientFactory, orgID))
 
 	return reachCmd
 }
 
-func newAssetsReachabilityStatusCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsReachabilityStatusCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "status <asset-id>",
 		Short: "Get reachability status for an asset",
@@ -302,16 +313,16 @@ func newAssetsReachabilityStatusCmd(clientFactory func() (*hackeronecli.Client, 
 			if err != nil {
 				return err
 			}
-			result, err := client.GetReachabilityStatus(cmd.Context(), args[0])
+			result, err := client.GetReachabilityStatus(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,result)
+			return writeOutput(cmd, result)
 		},
 	}
 }
 
-func newAssetsReachabilityCheckCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsReachabilityCheckCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "check <asset-id>",
 		Short: "Check reachability for an asset",
@@ -321,28 +332,28 @@ func newAssetsReachabilityCheckCmd(clientFactory func() (*hackeronecli.Client, e
 			if err != nil {
 				return err
 			}
-			result, err := client.CheckReachability(cmd.Context(), args[0])
+			result, err := client.CheckReachability(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,result)
+			return writeOutput(cmd, result)
 		},
 	}
 }
 
-func newAssetsScannerCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScannerCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	scannerCmd := &cobra.Command{
 		Use:   "scanner",
 		Short: "Scanner configuration operations",
 	}
 
-	scannerCmd.AddCommand(newAssetsScannerGetCmd(clientFactory))
-	scannerCmd.AddCommand(newAssetsScannerUpdateCmd(clientFactory))
+	scannerCmd.AddCommand(newAssetsScannerGetCmd(clientFactory, orgID))
+	scannerCmd.AddCommand(newAssetsScannerUpdateCmd(clientFactory, orgID))
 
 	return scannerCmd
 }
 
-func newAssetsScannerGetCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScannerGetCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <asset-id>",
 		Short: "Get scanner configuration for an asset",
@@ -352,16 +363,16 @@ func newAssetsScannerGetCmd(clientFactory func() (*hackeronecli.Client, error)) 
 			if err != nil {
 				return err
 			}
-			cfg, err := client.GetScannerConfig(cmd.Context(), args[0])
+			cfg, err := client.GetScannerConfig(cmd.Context(), *orgID, args[0])
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,cfg)
+			return writeOutput(cmd, cfg)
 		},
 	}
 }
 
-func newAssetsScannerUpdateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScannerUpdateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var enabled bool
 	cmd := &cobra.Command{
 		Use:   "update <asset-id>",
@@ -372,31 +383,31 @@ func newAssetsScannerUpdateCmd(clientFactory func() (*hackeronecli.Client, error
 			if err != nil {
 				return err
 			}
-			cfg, err := client.UpdateScannerConfig(cmd.Context(), args[0], hackeronecli.ScannerConfiguration{Enabled: enabled})
+			cfg, err := client.UpdateScannerConfig(cmd.Context(), *orgID, args[0], hackeronecli.ScannerConfiguration{Enabled: enabled})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,cfg)
+			return writeOutput(cmd, cfg)
 		},
 	}
 	cmd.Flags().BoolVar(&enabled, "enabled", false, "Enable or disable the scanner")
 	return cmd
 }
 
-func newAssetsScopesCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScopesCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	scopesCmd := &cobra.Command{
 		Use:   "scopes",
 		Short: "Manage asset scopes",
 	}
 
-	scopesCmd.AddCommand(newAssetsScopesAddCmd(clientFactory))
-	scopesCmd.AddCommand(newAssetsScopesUpdateCmd(clientFactory))
-	scopesCmd.AddCommand(newAssetsScopesArchiveCmd(clientFactory))
+	scopesCmd.AddCommand(newAssetsScopesAddCmd(clientFactory, orgID))
+	scopesCmd.AddCommand(newAssetsScopesUpdateCmd(clientFactory, orgID))
+	scopesCmd.AddCommand(newAssetsScopesArchiveCmd(clientFactory, orgID))
 
 	return scopesCmd
 }
 
-func newAssetsScopesAddCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScopesAddCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var input hackeronecli.AssetScope
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -407,7 +418,7 @@ func newAssetsScopesAddCmd(clientFactory func() (*hackeronecli.Client, error)) *
 			if err != nil {
 				return err
 			}
-			if err := client.AddAssetScope(cmd.Context(), input); err != nil {
+			if err := client.AddAssetScope(cmd.Context(), *orgID, input); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Asset scope added successfully")
@@ -419,7 +430,7 @@ func newAssetsScopesAddCmd(clientFactory func() (*hackeronecli.Client, error)) *
 	return cmd
 }
 
-func newAssetsScopesUpdateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScopesUpdateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var input hackeronecli.AssetScope
 	cmd := &cobra.Command{
 		Use:   "update <asset-id>",
@@ -430,7 +441,7 @@ func newAssetsScopesUpdateCmd(clientFactory func() (*hackeronecli.Client, error)
 			if err != nil {
 				return err
 			}
-			if err := client.UpdateAssetScope(cmd.Context(), args[0], input); err != nil {
+			if err := client.UpdateAssetScope(cmd.Context(), *orgID, args[0], input); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Asset scope updated successfully")
@@ -441,7 +452,7 @@ func newAssetsScopesUpdateCmd(clientFactory func() (*hackeronecli.Client, error)
 	return cmd
 }
 
-func newAssetsScopesArchiveCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsScopesArchiveCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	return &cobra.Command{
 		Use:   "archive <asset-id>",
 		Short: "Archive scopes for an asset",
@@ -451,7 +462,7 @@ func newAssetsScopesArchiveCmd(clientFactory func() (*hackeronecli.Client, error
 			if err != nil {
 				return err
 			}
-			if err := client.ArchiveAssetScopes(cmd.Context(), args[0]); err != nil {
+			if err := client.ArchiveAssetScopes(cmd.Context(), *orgID, args[0]); err != nil {
 				return err
 			}
 			return writeMessage(cmd, "Asset scopes archived successfully")
@@ -459,21 +470,21 @@ func newAssetsScopesArchiveCmd(clientFactory func() (*hackeronecli.Client, error
 	}
 }
 
-func newAssetsTagsCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsTagsCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Manage asset tags",
 	}
 
-	tagsCmd.AddCommand(newAssetsTagsListCmd(clientFactory))
-	tagsCmd.AddCommand(newAssetsTagsCreateCmd(clientFactory))
-	tagsCmd.AddCommand(newAssetsTagsCategoriesCmd(clientFactory))
-	tagsCmd.AddCommand(newAssetsTagsCreateCategoryCmd(clientFactory))
+	tagsCmd.AddCommand(newAssetsTagsListCmd(clientFactory, orgID))
+	tagsCmd.AddCommand(newAssetsTagsCreateCmd(clientFactory, orgID))
+	tagsCmd.AddCommand(newAssetsTagsCategoriesCmd(clientFactory, orgID))
+	tagsCmd.AddCommand(newAssetsTagsCreateCategoryCmd(clientFactory, orgID))
 
 	return tagsCmd
 }
 
-func newAssetsTagsListCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsTagsListCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var page, pageSize int
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -484,11 +495,11 @@ func newAssetsTagsListCmd(clientFactory func() (*hackeronecli.Client, error)) *c
 			if err != nil {
 				return err
 			}
-			tags, err := client.ListAssetTags(cmd.Context(), hackeronecli.PageParams{Number: page, Size: pageSize})
+			tags, err := client.ListAssetTags(cmd.Context(), *orgID, hackeronecli.PageParams{Number: page, Size: pageSize})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,tags)
+			return writeOutput(cmd, tags)
 		},
 	}
 	cmd.Flags().IntVar(&page, "page", 0, "Page number")
@@ -496,7 +507,7 @@ func newAssetsTagsListCmd(clientFactory func() (*hackeronecli.Client, error)) *c
 	return cmd
 }
 
-func newAssetsTagsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsTagsCreateCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var name, categoryID string
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -507,13 +518,13 @@ func newAssetsTagsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) 
 			if err != nil {
 				return err
 			}
-			tag, err := client.CreateAssetTag(cmd.Context(), hackeronecli.AssetTag{
+			tag, err := client.CreateAssetTag(cmd.Context(), *orgID, hackeronecli.AssetTag{
 				Attributes: hackeronecli.AssetTagAttributes{Name: name, CategoryID: categoryID},
 			})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,tag)
+			return writeOutput(cmd, tag)
 		},
 	}
 	cmd.Flags().StringVar(&name, "name", "", "Tag name")
@@ -521,7 +532,7 @@ func newAssetsTagsCreateCmd(clientFactory func() (*hackeronecli.Client, error)) 
 	return cmd
 }
 
-func newAssetsTagsCategoriesCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsTagsCategoriesCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var page, pageSize int
 	cmd := &cobra.Command{
 		Use:   "categories",
@@ -532,11 +543,11 @@ func newAssetsTagsCategoriesCmd(clientFactory func() (*hackeronecli.Client, erro
 			if err != nil {
 				return err
 			}
-			cats, err := client.ListAssetTagCategories(cmd.Context(), hackeronecli.PageParams{Number: page, Size: pageSize})
+			cats, err := client.ListAssetTagCategories(cmd.Context(), *orgID, hackeronecli.PageParams{Number: page, Size: pageSize})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,cats)
+			return writeOutput(cmd, cats)
 		},
 	}
 	cmd.Flags().IntVar(&page, "page", 0, "Page number")
@@ -544,7 +555,7 @@ func newAssetsTagsCategoriesCmd(clientFactory func() (*hackeronecli.Client, erro
 	return cmd
 }
 
-func newAssetsTagsCreateCategoryCmd(clientFactory func() (*hackeronecli.Client, error)) *cobra.Command {
+func newAssetsTagsCreateCategoryCmd(clientFactory func() (*hackeronecli.Client, error), orgID *string) *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
 		Use:   "create-category",
@@ -555,13 +566,13 @@ func newAssetsTagsCreateCategoryCmd(clientFactory func() (*hackeronecli.Client, 
 			if err != nil {
 				return err
 			}
-			cat, err := client.CreateAssetTagCategory(cmd.Context(), hackeronecli.AssetTagCategory{
+			cat, err := client.CreateAssetTagCategory(cmd.Context(), *orgID, hackeronecli.AssetTagCategory{
 				Attributes: hackeronecli.AssetTagCategoryAttributes{Name: name},
 			})
 			if err != nil {
 				return err
 			}
-			return writeOutput(cmd,cat)
+			return writeOutput(cmd, cat)
 		},
 	}
 	cmd.Flags().StringVar(&name, "name", "", "Category name")
