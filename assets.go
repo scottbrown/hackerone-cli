@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -121,7 +120,7 @@ func (c *Client) GetAsset(ctx context.Context, id string) (*Asset, error) {
 }
 
 func (c *Client) CreateAsset(ctx context.Context, input CreateAssetInput) (*Asset, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset", input)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,7 @@ func (c *Client) CreateAsset(ctx context.Context, input CreateAssetInput) (*Asse
 }
 
 func (c *Client) UpdateAsset(ctx context.Context, id string, input UpdateAssetInput) (*Asset, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset", input)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +156,7 @@ func (c *Client) UpdateAsset(ctx context.Context, id string, input UpdateAssetIn
 }
 
 func (c *Client) ArchiveAssets(ctx context.Context, ids []string) error {
-	body, err := json.Marshal(map[string][]string{"ids": ids})
+	body, err := wrapJSONAPI("asset", map[string][]string{"ids": ids})
 	if err != nil {
 		return err
 	}
@@ -240,7 +239,7 @@ func (c *Client) ListAssetPorts(ctx context.Context, assetID string, params Page
 }
 
 func (c *Client) CreateAssetPort(ctx context.Context, assetID string, input CreatePortInput) (*Port, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("port", input)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +304,7 @@ func (c *Client) GetScannerConfig(ctx context.Context, assetID string) (*Scanner
 }
 
 func (c *Client) UpdateScannerConfig(ctx context.Context, assetID string, input ScannerConfiguration) (*ScannerConfiguration, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("scanner-configuration", input)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +322,7 @@ func (c *Client) UpdateScannerConfig(ctx context.Context, assetID string, input 
 }
 
 func (c *Client) AddAssetScope(ctx context.Context, input AssetScope) error {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset-scope", input)
 	if err != nil {
 		return err
 	}
@@ -336,7 +335,7 @@ func (c *Client) AddAssetScope(ctx context.Context, input AssetScope) error {
 }
 
 func (c *Client) UpdateAssetScope(ctx context.Context, assetID string, input AssetScope) error {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset-scope", input)
 	if err != nil {
 		return err
 	}
@@ -373,7 +372,7 @@ func (c *Client) ListAssetTags(ctx context.Context, params PageParams) ([]AssetT
 }
 
 func (c *Client) CreateAssetTag(ctx context.Context, input AssetTag) (*AssetTag, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset-tag", input)
 	if err != nil {
 		return nil, err
 	}
@@ -406,7 +405,7 @@ func (c *Client) ListAssetTagCategories(ctx context.Context, params PageParams) 
 }
 
 func (c *Client) CreateAssetTagCategory(ctx context.Context, input AssetTagCategory) (*AssetTagCategory, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("asset-tag-category", input)
 	if err != nil {
 		return nil, err
 	}

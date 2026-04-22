@@ -588,15 +588,15 @@ func newReportsAttachmentsCmd(clientFactory func() (*hackeronecli.Client, error)
 	uploadCmd.Flags().StringVar(&filePath, "file", "", "File path to upload")
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <id> <attachment-id>",
-		Short: "Delete an attachment from a report",
-		Args:  cobra.ExactArgs(2),
+		Use:   "delete <id>",
+		Short: "Delete attachments from a report",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := clientFactory()
 			if err != nil {
 				return err
 			}
-			return client.DeleteAttachment(cmd.Context(), args[0], args[1])
+			return client.DeleteAttachment(cmd.Context(), args[0])
 		},
 	}
 
@@ -796,15 +796,15 @@ func newReportsRetestCmd(clientFactory func() (*hackeronecli.Client, error)) *co
 	}
 
 	cancelCmd := &cobra.Command{
-		Use:   "cancel <id> <retest-id>",
+		Use:   "cancel <id>",
 		Short: "Cancel a retest",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := clientFactory()
 			if err != nil {
 				return err
 			}
-			return client.CancelRetest(cmd.Context(), args[0], args[1])
+			return client.CancelRetest(cmd.Context(), args[0])
 		},
 	}
 

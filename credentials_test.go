@@ -50,8 +50,13 @@ func TestCreateCredential(t *testing.T) {
 			t.Errorf("expected path /credentials, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input CreateCredentialInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes CreateCredentialInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.AccountName != "acct1" {
 			t.Errorf("expected account_name acct1, got %q", input.AccountName)
 		}

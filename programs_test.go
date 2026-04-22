@@ -184,8 +184,8 @@ func TestListTeamMembers(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/programs/123/team_members" {
-			t.Errorf("expected path /programs/123/team_members, got %s", r.URL.Path)
+		if r.URL.Path != "/programs/123/members" {
+			t.Errorf("expected path /programs/123/members, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": []map[string]interface{}{
@@ -325,8 +325,13 @@ func TestSendProgramMessage(t *testing.T) {
 			t.Errorf("expected path /programs/123/messages, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input MessageInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes MessageInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.RecipientHandle != "hacker1" {
 			t.Errorf("expected recipient 'hacker1', got %q", input.RecipientHandle)
 		}
@@ -555,8 +560,13 @@ func TestUpdatePolicy(t *testing.T) {
 			t.Errorf("expected path /programs/123/policy, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input PolicyInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes PolicyInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.Policy != "new policy" {
 			t.Errorf("expected policy 'new policy', got %q", input.Policy)
 		}

@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 )
 
 type SendEmailInput struct {
@@ -13,7 +12,7 @@ type SendEmailInput struct {
 }
 
 func (c *Client) SendEmail(ctx context.Context, input SendEmailInput) error {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("email-message", input)
 	if err != nil {
 		return err
 	}

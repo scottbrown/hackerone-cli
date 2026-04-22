@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -70,7 +69,7 @@ func (c *Client) ListCredentials(ctx context.Context, params PageParams) ([]Cred
 }
 
 func (c *Client) CreateCredential(ctx context.Context, input CreateCredentialInput) (*Credential, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("credential", input)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func (c *Client) CreateCredential(ctx context.Context, input CreateCredentialInp
 }
 
 func (c *Client) UpdateCredential(ctx context.Context, id string, input UpdateCredentialInput) (*Credential, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("credential", input)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +156,7 @@ func (c *Client) ListCredentialInquiries(ctx context.Context, programID string, 
 }
 
 func (c *Client) CreateCredentialInquiry(ctx context.Context, programID string, input CreateCredentialInquiryInput) (*CredentialInquiry, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("credential-inquiry", input)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +174,7 @@ func (c *Client) CreateCredentialInquiry(ctx context.Context, programID string, 
 }
 
 func (c *Client) UpdateCredentialInquiry(ctx context.Context, programID, inquiryID string, input CreateCredentialInquiryInput) (*CredentialInquiry, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("credential-inquiry", input)
 	if err != nil {
 		return nil, err
 	}

@@ -118,3 +118,21 @@ func decodeResponse(resp *http.Response, v interface{}) error {
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(v)
 }
+
+type jsonAPIEnvelope struct {
+	Data jsonAPIData `json:"data"`
+}
+
+type jsonAPIData struct {
+	Type       string      `json:"type"`
+	Attributes interface{} `json:"attributes"`
+}
+
+func wrapJSONAPI(resourceType string, attributes interface{}) ([]byte, error) {
+	return json.Marshal(jsonAPIEnvelope{
+		Data: jsonAPIData{
+			Type:       resourceType,
+			Attributes: attributes,
+		},
+	})
+}

@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -244,7 +243,7 @@ func (c *Client) ListReporters(ctx context.Context, programID string, params Pag
 }
 
 func (c *Client) ListTeamMembers(ctx context.Context, programID string, params PageParams) ([]TeamMember, error) {
-	resp, err := c.Get(ctx, fmt.Sprintf("/programs/%s/team_members", programID), params.Apply(nil))
+	resp, err := c.Get(ctx, fmt.Sprintf("/programs/%s/members", programID), params.Apply(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +325,7 @@ func (c *Client) NotifyExternalPlatform(ctx context.Context, programID string) (
 }
 
 func (c *Client) SendProgramMessage(ctx context.Context, programID string, input MessageInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("program-message", input)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +341,7 @@ func (c *Client) SendProgramMessage(ctx context.Context, programID string, input
 }
 
 func (c *Client) AwardProgramBounty(ctx context.Context, programID string, input ProgramBountyInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("bounty", input)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +427,7 @@ func (c *Client) ListCVERequests(ctx context.Context, programID string, params P
 }
 
 func (c *Client) CreateCVERequest(ctx context.Context, programID string, input CreateCVERequestInput) (*CVERequest, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("cve-request", input)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +459,7 @@ func (c *Client) ListHackerInvitations(ctx context.Context, programID string, pa
 }
 
 func (c *Client) CreateHackerInvitation(ctx context.Context, programID string, input CreateHackerInvitationInput) (*HackerInvitation, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("hacker-invitation", input)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +477,7 @@ func (c *Client) CreateHackerInvitation(ctx context.Context, programID string, i
 }
 
 func (c *Client) UpdatePolicy(ctx context.Context, programID string, input PolicyInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("policy", input)
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +546,7 @@ func (c *Client) ListScopes(ctx context.Context, programID string, params PagePa
 }
 
 func (c *Client) CreateScope(ctx context.Context, programID string, input CreateScopeInput) (*StructuredScope, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("structured-scope", input)
 	if err != nil {
 		return nil, err
 	}
@@ -565,7 +564,7 @@ func (c *Client) CreateScope(ctx context.Context, programID string, input Create
 }
 
 func (c *Client) UpdateProgramScope(ctx context.Context, programID, scopeID string, input UpdateScopeInput) (*StructuredScope, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("structured-scope", input)
 	if err != nil {
 		return nil, err
 	}
@@ -602,7 +601,7 @@ func (c *Client) ListAwardedSwag(ctx context.Context, programID string, params P
 }
 
 func (c *Client) UpdateAwardedSwag(ctx context.Context, programID, swagID string, input UpdateSwagInput) (*AwardedSwag, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("awarded-swag", input)
 	if err != nil {
 		return nil, err
 	}
