@@ -147,7 +147,7 @@ type PolicyInput struct {
 }
 
 func (c *Client) ListPrograms(ctx context.Context, params PageParams) ([]Program, error) {
-	resp, err := c.Get(ctx, "/programs", params.Apply(nil))
+	resp, err := c.Get(ctx, "/me/programs", params.Apply(nil))
 	if err != nil {
 		return nil, err
 	}

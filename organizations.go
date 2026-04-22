@@ -94,7 +94,7 @@ type UpdateMemberInput struct {
 }
 
 func (c *Client) ListOrganizations(ctx context.Context, params PageParams) ([]Organization, error) {
-	resp, err := c.Get(ctx, "/organizations", params.Apply(nil))
+	resp, err := c.Get(ctx, "/me/organizations", params.Apply(nil))
 	if err != nil {
 		return nil, err
 	}
