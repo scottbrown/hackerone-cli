@@ -72,8 +72,13 @@ func TestCreateReport(t *testing.T) {
 			t.Errorf("expected path /reports, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input CreateReportInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes CreateReportInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.Title != "XSS" {
 			t.Errorf("expected title 'XSS', got %q", input.Title)
 		}
@@ -100,12 +105,17 @@ func TestAddComment(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/comments" {
-			t.Errorf("expected path /reports/123/comments, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/activities" {
+			t.Errorf("expected path /reports/123/activities, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input CommentInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes CommentInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.Message != "test comment" {
 			t.Errorf("expected message 'test comment', got %q", input.Message)
 		}
@@ -126,8 +136,8 @@ func TestAddComment(t *testing.T) {
 
 func TestUpdateAssignee(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/assignee" {
 			t.Errorf("expected path /reports/123/assignee, got %s", r.URL.Path)
@@ -143,11 +153,11 @@ func TestUpdateAssignee(t *testing.T) {
 
 func TestCloseComments(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/comments/close" {
-			t.Errorf("expected path /reports/123/comments/close, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/close_comments" {
+			t.Errorf("expected path /reports/123/close_comments, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -160,11 +170,11 @@ func TestCloseComments(t *testing.T) {
 
 func TestUpdateCustomFields(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/custom_fields" {
-			t.Errorf("expected path /reports/123/custom_fields, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/custom_field_values" {
+			t.Errorf("expected path /reports/123/custom_field_values, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -177,8 +187,8 @@ func TestUpdateCustomFields(t *testing.T) {
 
 func TestUpdateCVEs(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/cves" {
 			t.Errorf("expected path /reports/123/cves, got %s", r.URL.Path)
@@ -194,8 +204,8 @@ func TestUpdateCVEs(t *testing.T) {
 
 func TestUpdateInboxes(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/inboxes" {
 			t.Errorf("expected path /reports/123/inboxes, got %s", r.URL.Path)
@@ -211,11 +221,11 @@ func TestUpdateInboxes(t *testing.T) {
 
 func TestUpdateSeverity(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/severity" {
-			t.Errorf("expected path /reports/123/severity, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/severities" {
+			t.Errorf("expected path /reports/123/severities, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -228,15 +238,20 @@ func TestUpdateSeverity(t *testing.T) {
 
 func TestChangeState(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/state" {
-			t.Errorf("expected path /reports/123/state, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/state_changes" {
+			t.Errorf("expected path /reports/123/state_changes, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input StateChangeInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes StateChangeInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.State != "triaged" {
 			t.Errorf("expected state 'triaged', got %q", input.State)
 		}
@@ -251,8 +266,8 @@ func TestChangeState(t *testing.T) {
 
 func TestUpdateReportScope(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/structured_scope" {
 			t.Errorf("expected path /reports/123/structured_scope, got %s", r.URL.Path)
@@ -268,8 +283,8 @@ func TestUpdateReportScope(t *testing.T) {
 
 func TestUpdateTitle(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/title" {
 			t.Errorf("expected path /reports/123/title, got %s", r.URL.Path)
@@ -285,8 +300,8 @@ func TestUpdateTitle(t *testing.T) {
 
 func TestUpdateWeakness(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/weakness" {
 			t.Errorf("expected path /reports/123/weakness, got %s", r.URL.Path)
@@ -302,11 +317,11 @@ func TestUpdateWeakness(t *testing.T) {
 
 func TestUpdateReference(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/reference" {
-			t.Errorf("expected path /reports/123/reference, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/issue_tracker_reference_id" {
+			t.Errorf("expected path /reports/123/issue_tracker_reference_id, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -319,8 +334,8 @@ func TestUpdateReference(t *testing.T) {
 
 func TestRedactReport(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/redact" {
 			t.Errorf("expected path /reports/123/redact, got %s", r.URL.Path)
@@ -339,8 +354,8 @@ func TestAddSummary(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/summary" {
-			t.Errorf("expected path /reports/123/summary, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/summaries" {
+			t.Errorf("expected path /reports/123/summaries, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -353,8 +368,8 @@ func TestAddSummary(t *testing.T) {
 
 func TestGeneratePDF(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/pdf" {
 			t.Errorf("expected path /reports/123/pdf, got %s", r.URL.Path)
@@ -373,8 +388,8 @@ func TestGeneratePDF(t *testing.T) {
 
 func TestTransferReport(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
 		if r.URL.Path != "/reports/123/transfer" {
 			t.Errorf("expected path /reports/123/transfer, got %s", r.URL.Path)
@@ -410,8 +425,8 @@ func TestDeescalateReport(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/escalations" {
-			t.Errorf("expected path /reports/123/escalations, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/escalate" {
+			t.Errorf("expected path /reports/123/escalate, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -447,8 +462,8 @@ func TestUploadAttachment(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/attachments" {
-			t.Errorf("expected path /reports/123/attachments, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/attachments" {
+			t.Errorf("expected path /reports/attachments, got %s", r.URL.Path)
 		}
 		ct := r.Header.Get("Content-Type")
 		if !strings.HasPrefix(ct, "multipart/form-data") {
@@ -482,13 +497,13 @@ func TestDeleteAttachment(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/attachments/att-1" {
-			t.Errorf("expected path /reports/123/attachments/att-1, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/attachments" {
+			t.Errorf("expected path /reports/123/attachments, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := c.DeleteAttachment(context.Background(), "123", "att-1")
+	err := c.DeleteAttachment(context.Background(), "123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -513,11 +528,11 @@ func TestAwardReportBounty(t *testing.T) {
 
 func TestMarkIneligible(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/eligibility" {
-			t.Errorf("expected path /reports/123/eligibility, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/ineligible_for_bounty" {
+			t.Errorf("expected path /reports/123/ineligible_for_bounty, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -577,11 +592,11 @@ func TestCreateBountySuggestion(t *testing.T) {
 
 func TestUpdateDisclosure(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/disclosure" {
-			t.Errorf("expected path /reports/123/disclosure, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/disclosure_requests" {
+			t.Errorf("expected path /reports/123/disclosure_requests, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -597,8 +612,8 @@ func TestCancelDisclosure(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/disclosure" {
-			t.Errorf("expected path /reports/123/disclosure, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/disclosure_requests" {
+			t.Errorf("expected path /reports/123/disclosure_requests, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -611,11 +626,11 @@ func TestCancelDisclosure(t *testing.T) {
 
 func TestUpdateTags(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPatch {
-			t.Errorf("expected PATCH, got %s", r.Method)
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/tags" {
-			t.Errorf("expected path /reports/123/tags, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/report_tags" {
+			t.Errorf("expected path /reports/123/report_tags, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})
@@ -648,13 +663,13 @@ func TestCancelRetest(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/retests/rt-1" {
-			t.Errorf("expected path /reports/123/retests/rt-1, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/retests/cancel" {
+			t.Errorf("expected path /reports/123/retests/cancel, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := c.CancelRetest(context.Background(), "123", "rt-1")
+	err := c.CancelRetest(context.Background(), "123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -665,8 +680,8 @@ func TestAwardSwag(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/reports/123/swag" {
-			t.Errorf("expected path /reports/123/swag, got %s", r.URL.Path)
+		if r.URL.Path != "/reports/123/swags" {
+			t.Errorf("expected path /reports/123/swags, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok"})
 	})

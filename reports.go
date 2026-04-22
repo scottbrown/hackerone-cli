@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -109,7 +108,7 @@ func (c *Client) GetReport(ctx context.Context, id string) (*Report, error) {
 }
 
 func (c *Client) CreateReport(ctx context.Context, input CreateReportInput) (*Report, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("report", input)
 	if err != nil {
 		return nil, err
 	}
@@ -127,11 +126,11 @@ func (c *Client) CreateReport(ctx context.Context, input CreateReportInput) (*Re
 }
 
 func (c *Client) AddComment(ctx context.Context, reportID string, input CommentInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("activity-comment", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/comments", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/activities", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -143,11 +142,11 @@ func (c *Client) AddComment(ctx context.Context, reportID string, input CommentI
 }
 
 func (c *Client) UpdateAssignee(ctx context.Context, reportID string, assigneeID string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"assignee_id": assigneeID})
+	body, err := wrapJSONAPI("report-assignee", map[string]string{"assignee_id": assigneeID})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/assignee", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/assignee", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,7 @@ func (c *Client) UpdateAssignee(ctx context.Context, reportID string, assigneeID
 }
 
 func (c *Client) CloseComments(ctx context.Context, reportID string) (map[string]interface{}, error) {
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/comments/close", reportID), bytes.NewReader([]byte("{}")))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/close_comments", reportID), bytes.NewReader([]byte("{}")))
 	if err != nil {
 		return nil, err
 	}
@@ -171,11 +170,11 @@ func (c *Client) CloseComments(ctx context.Context, reportID string) (map[string
 }
 
 func (c *Client) UpdateCustomFields(ctx context.Context, reportID string, fields map[string]interface{}) (map[string]interface{}, error) {
-	body, err := json.Marshal(fields)
+	body, err := wrapJSONAPI("custom-field-value", fields)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/custom_fields", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/custom_field_values", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -187,11 +186,11 @@ func (c *Client) UpdateCustomFields(ctx context.Context, reportID string, fields
 }
 
 func (c *Client) UpdateCVEs(ctx context.Context, reportID string, cves []string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string][]string{"cves": cves})
+	body, err := wrapJSONAPI("report-cve", map[string][]string{"cves": cves})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/cves", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/cves", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -203,11 +202,11 @@ func (c *Client) UpdateCVEs(ctx context.Context, reportID string, cves []string)
 }
 
 func (c *Client) UpdateInboxes(ctx context.Context, reportID string, inboxIDs []string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string][]string{"inbox_ids": inboxIDs})
+	body, err := wrapJSONAPI("report-inbox", map[string][]string{"inbox_ids": inboxIDs})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/inboxes", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/inboxes", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -219,11 +218,11 @@ func (c *Client) UpdateInboxes(ctx context.Context, reportID string, inboxIDs []
 }
 
 func (c *Client) UpdateSeverity(ctx context.Context, reportID string, input SeverityInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("severity", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/severity", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/severities", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -235,11 +234,11 @@ func (c *Client) UpdateSeverity(ctx context.Context, reportID string, input Seve
 }
 
 func (c *Client) ChangeState(ctx context.Context, reportID string, input StateChangeInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("state-change", input)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/state", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/state_changes", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -251,11 +250,11 @@ func (c *Client) ChangeState(ctx context.Context, reportID string, input StateCh
 }
 
 func (c *Client) UpdateReportScope(ctx context.Context, reportID string, scopeID string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"scope_id": scopeID})
+	body, err := wrapJSONAPI("structured-scope", map[string]string{"scope_id": scopeID})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/structured_scope", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/structured_scope", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -267,11 +266,11 @@ func (c *Client) UpdateReportScope(ctx context.Context, reportID string, scopeID
 }
 
 func (c *Client) UpdateTitle(ctx context.Context, reportID string, title string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"title": title})
+	body, err := wrapJSONAPI("report-title", map[string]string{"title": title})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/title", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/title", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -283,11 +282,11 @@ func (c *Client) UpdateTitle(ctx context.Context, reportID string, title string)
 }
 
 func (c *Client) UpdateWeakness(ctx context.Context, reportID string, weaknessID string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"weakness_id": weaknessID})
+	body, err := wrapJSONAPI("weakness", map[string]string{"weakness_id": weaknessID})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/weakness", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/weakness", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -299,11 +298,11 @@ func (c *Client) UpdateWeakness(ctx context.Context, reportID string, weaknessID
 }
 
 func (c *Client) UpdateReference(ctx context.Context, reportID string, reference string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"reference": reference})
+	body, err := wrapJSONAPI("issue-tracker-reference-id", map[string]string{"reference": reference})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/reference", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/issue_tracker_reference_id", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +314,7 @@ func (c *Client) UpdateReference(ctx context.Context, reportID string, reference
 }
 
 func (c *Client) RedactReport(ctx context.Context, reportID string) (map[string]interface{}, error) {
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/redact", reportID), bytes.NewReader([]byte("{}")))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/redact", reportID), bytes.NewReader([]byte("{}")))
 	if err != nil {
 		return nil, err
 	}
@@ -327,11 +326,11 @@ func (c *Client) RedactReport(ctx context.Context, reportID string) (map[string]
 }
 
 func (c *Client) AddSummary(ctx context.Context, reportID string, content string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"content": content})
+	body, err := wrapJSONAPI("report-summary", map[string]string{"content": content})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/summary", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/summaries", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +342,7 @@ func (c *Client) AddSummary(ctx context.Context, reportID string, content string
 }
 
 func (c *Client) GeneratePDF(ctx context.Context, reportID string) (map[string]interface{}, error) {
-	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/pdf", reportID), bytes.NewReader([]byte("{}")))
+	resp, err := c.Get(ctx, fmt.Sprintf("/reports/%s/pdf", reportID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -355,11 +354,11 @@ func (c *Client) GeneratePDF(ctx context.Context, reportID string) (map[string]i
 }
 
 func (c *Client) TransferReport(ctx context.Context, reportID string, programID string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"program_id": programID})
+	body, err := wrapJSONAPI("report-transfer", map[string]string{"program_id": programID})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/transfer", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/transfer", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +370,7 @@ func (c *Client) TransferReport(ctx context.Context, reportID string, programID 
 }
 
 func (c *Client) EscalateReport(ctx context.Context, reportID string, integration string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"integration": integration})
+	body, err := wrapJSONAPI("report-escalation", map[string]string{"integration": integration})
 	if err != nil {
 		return nil, err
 	}
@@ -387,12 +386,12 @@ func (c *Client) EscalateReport(ctx context.Context, reportID string, integratio
 }
 
 func (c *Client) DeescalateReport(ctx context.Context, reportID string) error {
-	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/escalations", reportID))
+	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/escalate", reportID))
 	return err
 }
 
 func (c *Client) AddParticipant(ctx context.Context, reportID string, email string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"email": email})
+	body, err := wrapJSONAPI("report-participant", map[string]string{"email": email})
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +424,7 @@ func (c *Client) UploadAttachment(ctx context.Context, reportID string, filePath
 	}
 	writer.Close()
 
-	u := c.BaseURL + fmt.Sprintf("/reports/%s/attachments", reportID)
+	u := c.BaseURL + "/reports/attachments"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, &buf)
 	if err != nil {
 		return nil, err
@@ -446,13 +445,13 @@ func (c *Client) UploadAttachment(ctx context.Context, reportID string, filePath
 	return result, nil
 }
 
-func (c *Client) DeleteAttachment(ctx context.Context, reportID, attachmentID string) error {
-	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/attachments/%s", reportID, attachmentID))
+func (c *Client) DeleteAttachment(ctx context.Context, reportID string) error {
+	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/attachments", reportID))
 	return err
 }
 
 func (c *Client) AwardReportBounty(ctx context.Context, reportID string, input BountyInput) (map[string]interface{}, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("bounty", input)
 	if err != nil {
 		return nil, err
 	}
@@ -468,7 +467,7 @@ func (c *Client) AwardReportBounty(ctx context.Context, reportID string, input B
 }
 
 func (c *Client) MarkIneligible(ctx context.Context, reportID string) (map[string]interface{}, error) {
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/eligibility", reportID), bytes.NewReader([]byte("{}")))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/ineligible_for_bounty", reportID), bytes.NewReader([]byte("{}")))
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +493,7 @@ func (c *Client) ListBountySuggestions(ctx context.Context, reportID string, par
 }
 
 func (c *Client) CreateBountySuggestion(ctx context.Context, reportID string, input CreateBountySuggestionInput) (*BountySuggestion, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("bounty-suggestion", input)
 	if err != nil {
 		return nil, err
 	}
@@ -512,11 +511,11 @@ func (c *Client) CreateBountySuggestion(ctx context.Context, reportID string, in
 }
 
 func (c *Client) UpdateDisclosure(ctx context.Context, reportID string, state string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string]string{"state": state})
+	body, err := wrapJSONAPI("disclosure-request", map[string]string{"state": state})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/disclosure", reportID), bytes.NewReader(body))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/disclosure_requests", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -528,16 +527,16 @@ func (c *Client) UpdateDisclosure(ctx context.Context, reportID string, state st
 }
 
 func (c *Client) CancelDisclosure(ctx context.Context, reportID string) error {
-	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/disclosure", reportID))
+	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/disclosure_requests", reportID))
 	return err
 }
 
 func (c *Client) UpdateTags(ctx context.Context, reportID string, tags []string) (map[string]interface{}, error) {
-	body, err := json.Marshal(map[string][]string{"tags": tags})
+	body, err := wrapJSONAPI("report-tag", map[string][]string{"tags": tags})
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.Patch(ctx, fmt.Sprintf("/reports/%s/tags", reportID), bytes.NewReader(body))
+	resp, err := c.Put(ctx, fmt.Sprintf("/reports/%s/report_tags", reportID), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -560,13 +559,13 @@ func (c *Client) RequestRetest(ctx context.Context, reportID string) (map[string
 	return result, nil
 }
 
-func (c *Client) CancelRetest(ctx context.Context, reportID, retestID string) error {
-	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/retests/%s", reportID, retestID))
+func (c *Client) CancelRetest(ctx context.Context, reportID string) error {
+	_, err := c.Delete(ctx, fmt.Sprintf("/reports/%s/retests/cancel", reportID))
 	return err
 }
 
 func (c *Client) AwardSwag(ctx context.Context, reportID string) (map[string]interface{}, error) {
-	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/swag", reportID), bytes.NewReader([]byte("{}")))
+	resp, err := c.Post(ctx, fmt.Sprintf("/reports/%s/swags", reportID), bytes.NewReader([]byte("{}")))
 	if err != nil {
 		return nil, err
 	}

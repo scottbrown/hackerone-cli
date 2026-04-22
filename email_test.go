@@ -17,10 +17,15 @@ func TestSendEmail(t *testing.T) {
 			t.Errorf("expected path /email, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input SendEmailInput
-		if err := json.Unmarshal(body, &input); err != nil {
+		var envelope struct {
+			Data struct {
+				Attributes SendEmailInput `json:"attributes"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(body, &envelope); err != nil {
 			t.Fatalf("failed to unmarshal body: %v", err)
 		}
+		input := envelope.Data.Attributes
 		if input.To != "user@example.com" {
 			t.Errorf("expected to=user@example.com, got %q", input.To)
 		}
@@ -71,10 +76,15 @@ func TestSendEmailError(t *testing.T) {
 func TestSendEmailEmptyBody(t *testing.T) {
 	c, _ := testServer(t, func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		var input SendEmailInput
-		if err := json.Unmarshal(body, &input); err != nil {
+		var envelope struct {
+			Data struct {
+				Attributes SendEmailInput `json:"attributes"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(body, &envelope); err != nil {
 			t.Fatalf("failed to unmarshal body: %v", err)
 		}
+		input := envelope.Data.Attributes
 		if input.Body != "" {
 			t.Errorf("expected empty body, got %q", input.Body)
 		}

@@ -183,8 +183,13 @@ func TestCreateInvitation(t *testing.T) {
 			t.Errorf("expected path /organizations/org-1/invitations, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var input CreateInvitationInput
-		json.Unmarshal(body, &input)
+		var envelope struct {
+			Data struct {
+				Attributes CreateInvitationInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		input := envelope.Data.Attributes
 		if input.Email != "new@example.com" {
 			t.Errorf("expected email new@example.com, got %q", input.Email)
 		}

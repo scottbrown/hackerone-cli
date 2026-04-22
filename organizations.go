@@ -3,7 +3,6 @@ package hackeronecli
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -193,7 +192,7 @@ func (c *Client) ListInvitations(ctx context.Context, orgID string, params PageP
 }
 
 func (c *Client) CreateInvitation(ctx context.Context, orgID string, input CreateInvitationInput) (*Invitation, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("invitation", input)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +238,7 @@ func (c *Client) GetGroup(ctx context.Context, orgID, groupID string) (*Group, e
 }
 
 func (c *Client) CreateGroup(ctx context.Context, orgID string, input CreateGroupInput) (*Group, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("group", input)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +256,7 @@ func (c *Client) CreateGroup(ctx context.Context, orgID string, input CreateGrou
 }
 
 func (c *Client) UpdateGroup(ctx context.Context, orgID, groupID string, input UpdateGroupInput) (*Group, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("group", input)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +302,7 @@ func (c *Client) GetMember(ctx context.Context, orgID, memberID string) (*Member
 }
 
 func (c *Client) UpdateMember(ctx context.Context, orgID, memberID string, input UpdateMemberInput) (*Member, error) {
-	body, err := json.Marshal(input)
+	body, err := wrapJSONAPI("organization-member", input)
 	if err != nil {
 		return nil, err
 	}

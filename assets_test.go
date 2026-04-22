@@ -74,8 +74,13 @@ func TestCreateAsset(t *testing.T) {
 		if r.URL.Path != "/assets" {
 			t.Errorf("expected path /assets, got %s", r.URL.Path)
 		}
-		var input CreateAssetInput
-		json.NewDecoder(r.Body).Decode(&input)
+		var envelope struct {
+			Data struct {
+				Attributes CreateAssetInput `json:"attributes"`
+			} `json:"data"`
+		}
+		json.NewDecoder(r.Body).Decode(&envelope)
+		input := envelope.Data.Attributes
 		if input.AssetType != "URL" {
 			t.Errorf("expected asset_type URL, got %s", input.AssetType)
 		}
@@ -125,10 +130,14 @@ func TestArchiveAssets(t *testing.T) {
 			t.Errorf("expected path /assets, got %s", r.URL.Path)
 		}
 		body, _ := io.ReadAll(r.Body)
-		var payload map[string][]string
-		json.Unmarshal(body, &payload)
-		if len(payload["ids"]) != 2 {
-			t.Errorf("expected 2 ids, got %d", len(payload["ids"]))
+		var envelope struct {
+			Data struct {
+				Attributes map[string][]string `json:"attributes"`
+			} `json:"data"`
+		}
+		json.Unmarshal(body, &envelope)
+		if len(envelope.Data.Attributes["ids"]) != 2 {
+			t.Errorf("expected 2 ids, got %d", len(envelope.Data.Attributes["ids"]))
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
