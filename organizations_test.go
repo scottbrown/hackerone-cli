@@ -13,8 +13,8 @@ func TestListOrganizations(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
-		if r.URL.Path != "/organizations" {
-			t.Errorf("expected path /organizations, got %s", r.URL.Path)
+		if r.URL.Path != "/me/organizations" {
+			t.Errorf("expected path /me/organizations, got %s", r.URL.Path)
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"data": []map[string]interface{}{
