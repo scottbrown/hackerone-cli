@@ -78,6 +78,16 @@ jobs:
             -A -t cert -f pkcs12 \
             -k "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
+      - name: Sign macOS binary
+        env:
+          MACOS_APP_CERT_IDENTITY: ${{ secrets.MACOS_APP_CERT_IDENTITY }}
+        run: |
+          codesign \
+            --sign "$MACOS_APP_CERT_IDENTITY" \
+            --options runtime \
+            --timestamp \
+            --force \
+            .build/darwin-universal/h1
       - name: Build and sign macOS package
         env:
           MACOS_CERTIFICATE_IDENTITY: ${{ secrets.MACOS_CERTIFICATE_IDENTITY }}
