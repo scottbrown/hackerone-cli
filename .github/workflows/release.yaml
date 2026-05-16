@@ -30,6 +30,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
+          draft: true
           files: |
             bom.json
             .dist/*.tar.gz
@@ -37,6 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   macos-pkg:
+    needs: build
     runs-on: macos-latest
     permissions:
       contents: write
@@ -110,6 +112,18 @@ jobs:
       - name: Upload macOS package to Release
         uses: softprops/action-gh-release@v3
         with:
+          draft: true
           files: .dist/*.pkg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    needs: [build, macos-pkg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish Release
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
