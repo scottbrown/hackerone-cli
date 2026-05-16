@@ -35,3 +35,81 @@ jobs:
             .dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  macos-pkg:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Build macOS binaries
+        run: |
+          mkdir -p .build/darwin-amd64 .build/darwin-arm64
+          task build-darwin
+      - name: Create universal binary
+        run: |
+          mkdir -p .build/darwin-universal
+          lipo -create \
+            -output .build/darwin-universal/h1 \
+            .build/darwin-amd64/h1 \
+            .build/darwin-arm64/h1
+      - name: Import signing certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          echo "$MACOS_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import $RUNNER_TEMP/certificate.p12 \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+      - name: Sign macOS binary
+        env:
+          MACOS_APP_CERT_IDENTITY: ${{ secrets.MACOS_APP_CERT_IDENTITY }}
+        run: |
+          codesign \
+            --sign "$MACOS_APP_CERT_IDENTITY" \
+            --options runtime \
+            --timestamp \
+            --force \
+            .build/darwin-universal/h1
+      - name: Build and sign macOS package
+        env:
+          MACOS_CERTIFICATE_IDENTITY: ${{ secrets.MACOS_CERTIFICATE_IDENTITY }}
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mkdir -p .dist
+          pkgbuild \
+            --root .build/darwin-universal \
+            --identifier com.scottbrown.hackerone-cli \
+            --version "$VERSION" \
+            --install-location /usr/local/bin \
+            $RUNNER_TEMP/h1_unsigned.pkg
+          productsign \
+            --sign "$MACOS_CERTIFICATE_IDENTITY" \
+            $RUNNER_TEMP/h1_unsigned.pkg \
+            .dist/h1_${VERSION}_darwin.pkg
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/signing.keychain-db
+      - name: Upload macOS package to Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: .dist/*.pkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
