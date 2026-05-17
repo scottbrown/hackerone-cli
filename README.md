@@ -18,6 +18,20 @@ The binary is placed at `bin/h1`.
 go install github.com/scottbrown/hackerone-cli/cmd/h1@latest
 ```
 
+### macOS
+
+Each [release](https://github.com/scottbrown/hackerone-cli/releases) ships a
+signed and notarized macOS installer, `h1_<version>_darwin.pkg`, containing a
+universal (Intel + Apple Silicon) binary that installs to `/usr/local/bin`:
+
+```bash
+sudo installer -pkg h1_<version>_darwin.pkg -target /
+```
+
+Per-architecture tarballs (`h1_<version>_darwin_amd64.tar.gz`,
+`h1_<version>_darwin_arm64.tar.gz`) are also published; the binaries inside are
+signed with a Developer ID and notarized by Apple.
+
 ## Authentication
 
 The CLI uses HTTP Basic Auth with your HackerOne API credentials. Set these environment variables:
