@@ -17,6 +17,8 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Install Task
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install github.com/go-task/task/v3/cmd/task@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
@@ -25,6 +27,8 @@ jobs:
           mkdir -p .dist
           task release-linux release-windows VERSION=${GITHUB_REF_NAME}
       - name: Generate SBOM
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest
           task sbom
@@ -51,6 +55,8 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Install Task
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install github.com/go-task/task/v3/cmd/task@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
