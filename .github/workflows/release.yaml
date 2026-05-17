@@ -131,12 +131,28 @@ jobs:
           cp .build/darwin-amd64/h1 "$RUNNER_TEMP/notarize/h1-darwin-amd64"
           cp .build/darwin-arm64/h1 "$RUNNER_TEMP/notarize/h1-darwin-arm64"
           ditto -c -k "$RUNNER_TEMP/notarize" "$RUNNER_TEMP/notarize.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+          SUBMISSION_ID=$(xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
             --key "$KEY_PATH" \
             --key-id "$MACOS_NOTARY_KEY_ID" \
             --issuer "$MACOS_NOTARY_ISSUER_ID" \
-            --wait \
-            --timeout 30m
+            --output-format json | jq -r '.id')
+          echo "Notarization submission ID: $SUBMISSION_ID"
+          if ! xcrun notarytool wait "$SUBMISSION_ID" \
+            --key "$KEY_PATH" \
+            --key-id "$MACOS_NOTARY_KEY_ID" \
+            --issuer "$MACOS_NOTARY_ISSUER_ID" \
+            --timeout 30m; then
+            echo "::error::Notarization failed or timed out; fetching status and log:"
+            xcrun notarytool info "$SUBMISSION_ID" \
+              --key "$KEY_PATH" \
+              --key-id "$MACOS_NOTARY_KEY_ID" \
+              --issuer "$MACOS_NOTARY_ISSUER_ID" || true
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --key "$KEY_PATH" \
+              --key-id "$MACOS_NOTARY_KEY_ID" \
+              --issuer "$MACOS_NOTARY_ISSUER_ID" || true
+            exit 1
+          fi
           xcrun stapler staple .dist/h1_${VERSION}_darwin.pkg
       - name: Clean up keychain
         if: always()
