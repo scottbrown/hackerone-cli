@@ -9,7 +9,7 @@ jobs:
       - name: checkout the code
         uses: actions/checkout@v7.0.1
       - name: install go
-        uses: actions/setup-go@v6.5.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
       - name: Install Task
