@@ -135,7 +135,7 @@ Use `h1 [command] --help` to see available subcommands and flags.
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.27.4+
 - [Task](https://taskfile.dev/) (Go Task runner)
 
 ### Build
